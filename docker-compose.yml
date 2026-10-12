@@ -1,0 +1,35 @@
+# Starts the API and its database:  docker compose up --build
+# Swagger UI: http://localhost:8080/swagger
+#
+# The credentials below are for local development only. In a real environment they come from a
+# secret store, never from a file in the repository.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: atm_cash
+      POSTGRES_USER: atm
+      POSTGRES_PASSWORD: atm_local_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - atm-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atm -d atm_cash"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: Host=db;Port=5432;Database=atm_cash;Username=atm;Password=atm_local_dev
+      Cash__CardHashKey: local-development-only-key-replace-in-production
+    ports:
+      - "8080:8080"
+
+volumes:
+  atm-db-data:
